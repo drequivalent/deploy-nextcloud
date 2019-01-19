@@ -133,13 +133,9 @@ $domain {
 }
 EOL
 
-/usr/local/bin/caddy -log stdout -agree=true -conf=/etc/caddy/Caddyfile -root=/var/tmp -agree -email=no@than.ks &
-last_pid=$!
-sleep(40)
-kill -9 $last_pid
+nohup /usr/local/bin/caddy -log stdout -agree=true -conf=/etc/caddy/Caddyfile -root=/var/tmp -agree -email=no@than.ks
 
-systemctl enable caddy
-systemctl start caddy
+
 
 wget $latestnc
 mkdir -p /var/www/html
@@ -147,3 +143,8 @@ unzip latest.zip -d /var/www/html
 
 chown -R www-data:www-data /var/www/html
 rm -r latest.zip
+
+killall -9 caddy
+
+systemctl enable caddy
+systemctl start caddy
