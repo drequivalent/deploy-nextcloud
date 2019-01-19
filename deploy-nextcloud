@@ -156,6 +156,9 @@ get-nextcloud () {
 	rm -r latest.zip
 }
 
+echo "Let's update everything so nothing's in the way"
+apt update; apt -y upgrade; apt -y dist-upgrade
+
 echo "Installing latest Nextcloud with PHP 7.2 for $domain"
 echo "Now kick back and relax, while we're getting PHP"
 get-php > /dev/null 2>&1
