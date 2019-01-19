@@ -18,7 +18,7 @@ echo "deb https://packages.sury.org/php/ stretch main" | tee /etc/apt/sources.li
 apt -y update
 apt -y upgrade
 
-apt -y install php7.2 php7.2-fpm curl unzip php7.2-gd php7.2-json php7.2-mysql php7.2-curl php7.2-mbstring php7.2-intl php-imagick php7.2-xml php7.2-zip
+apt -y install php7.2 php7.2-fpm curl unzip php7.2-gd php7.2-json php7.2-mysql php7.2-curl php7.2-mbstring php7.2-intl php-imagick php7.2-xml php7.2-zip php-sqlite3
 
 sed -i 's/upload_max_filesize = 2M/upload_max_filesize = 1024M/' /etc/php/7.2/fpm/php.ini
 sed -i 's/post_max_size = 8M/post_max_size = 1024M/' /etc/php/7.2/fpm/php.ini
@@ -27,13 +27,16 @@ service php7.2-fpm restart
 
 curl https://getcaddy.com | bash -s personal
 
+mkdir /var/log/caddy
+chown -R www-data:www-data /var/log/caddy
+
 cat >/etc/systemd/system/caddy.service << EOL
 
 [Unit]
 Description=Caddy HTTP/2 web server
 Documentation=https://caddyserver.com/docs
-After=network-online.target
-Wants=network-online.target systemd-networkd-wait-online.service
+#After=network-online.target
+#Wants=network-online.target systemd-networkd-wait-online.service
 
 [Service]
 Restart=always
@@ -59,6 +62,10 @@ ProtectHome=true
 ProtectSystem=full
 ReadWriteDirectories=/etc/ssl/caddy
 
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+
 [Install]
 WantedBy=multi-user.target
 EOL
@@ -67,11 +74,15 @@ mkdir -p /etc/ssl/caddy
 mkdir -p /etc/caddy
 mkdir -p /var/www/html/nextcloud
 
+chown -R www-data:www-data /var/log/caddy
+chown -R www-data:www-data /var/www
+chown -R www-data:www-data /etc/ssl/caddy
+
 cat >/etc/caddy/Caddyfile << EOL
 $domain {
 	root   /var/www/html/nextcloud
-	log    /var/log/nextcloud_access.log
-	errors /var/log/nextcloud_errors.log
+	log    /var/log/caddy/nextcloud_access.log
+	errors /var/log/caddy/nextcloud_errors.log
 
 	fastcgi / /run/php/php7.2-fpm.sock php {
 		env PATH /bin
@@ -133,9 +144,8 @@ $domain {
 }
 EOL
 
-nohup /usr/local/bin/caddy -log stdout -agree=true -conf=/etc/caddy/Caddyfile -root=/var/tmp -agree -email=no@than.ks
-
-
+systemctl enable caddy
+systemctl start caddy
 
 wget $latestnc
 mkdir -p /var/www/html
@@ -144,7 +154,3 @@ unzip latest.zip -d /var/www/html
 chown -R www-data:www-data /var/www/html
 rm -r latest.zip
 
-killall -9 caddy
-
-systemctl enable caddy
-systemctl start caddy
