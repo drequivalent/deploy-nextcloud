@@ -154,3 +154,4 @@ unzip latest.zip -d /var/www/html
 chown -R www-data:www-data /var/www/html
 rm -r latest.zip
 
+echo "Now go to https://$domain and set your account up, and you're done!"
